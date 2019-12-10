@@ -1,6 +1,6 @@
 /**
 *   
-*   File: telegram_notifications_bot.groovy
+*   File: Telegram_Driver.groovy
 *   Platform: Hubitat
 *   Modification History:
 *       Date       Who              What
@@ -133,8 +133,10 @@ def validateAPI() {
 def sendMessage(chatID, message) {
     try {
         message_parts = message.split("[|][|][|]");
-        message       = message_parts[0]
-        extra_params  = message_parts[1].split("&")
+        message       = message_parts[0]        
+        if ( message_parts.length > 1 ) {
+            extra_params  = message_parts[1].split("&")
+        }
         
         msg_params = [
             uri: "https://api.telegram.org/bot" + apiKey + "/sendMessage",
