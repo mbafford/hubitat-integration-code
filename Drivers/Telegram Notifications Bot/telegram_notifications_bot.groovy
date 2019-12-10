@@ -114,9 +114,9 @@ def validateAPI() {
             } else {
                 log.info response.data
                 
-                sendEvent(name: "botName",  value: response.data.result.username, displayed:true)
-                sendEvent(name: "botID",    value: response.data.result.id,       displayed:true)
-                sendEvent(name: "botIsBot", value: response.data.result.is_bot,   displayed:true)
+                state.botName = response.data.result.username
+                state.botID   = response.data.result.id
+                state.is_bot  = response.data.result.is_bot
             }
         }
     } catch (Exception e) {
@@ -159,7 +159,7 @@ def sendMessage(chatID, message) {
             } else {
                 log.info response.data
                 
-                sendEvent(name: "lastMessage",  value: response.data.result.date, displayed:true)
+                state.lastMessage = response.data.result.date
                 log.info "Message response: ${response.data}"
             }
         }
