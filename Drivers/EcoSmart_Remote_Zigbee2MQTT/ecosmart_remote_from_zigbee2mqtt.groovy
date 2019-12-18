@@ -37,9 +37,9 @@ def installed() {
 
 // Parse incoming device messages to generate events
 def parse(String mqttMsg) {
-  if (logEnable) log.debug "MQTTStatus- incoming message: ${mqttMsg}"
-
   msg = interfaces.mqtt.parseMessage(mqttMsg)
+  if (logEnable) log.debug "MQTTStatus- incoming message: ${msg}"
+
   payload = parseJson( msg.get('payload') )
   action  = payload["action"]
     
