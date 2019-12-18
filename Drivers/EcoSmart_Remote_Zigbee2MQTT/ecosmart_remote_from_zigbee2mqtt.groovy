@@ -68,21 +68,19 @@ def uninstalled() {
 }
 
 def initialize() {
-/*
-    if (logEnable) runIn(900,logsOff) // clears debugging after 900 somethings
-*/
     try {
         def mqttInt = interfaces.mqtt
-        //open connection
-        mqttbroker = "tcp://" + settings?.MQTTBroker + ":1883"
-        mqttInt.connect(mqttbroker, "hubitat", settings?.username,settings?.password)
+        def server   = "tcp://" + settings?.MQTTBroker + ":1883"
+        def clientID = "hubitat-" + device.deviceNetworkId
+        if ( logEnable ) log.debug "MQTTStatus- Connecting to ${server} as client ${clientID}"
+        mqttInt.connect(server, clientID, settings?.username,settings?.password)
         //give it a chance to start
         pauseExecution(1000)
-        log.info "Connection established"
-		if (logEnable) log.debug "Subscribed to: ${settings?.topicSub}"
+        if (logEnable) log.debug "MQTTStatus- Connection established"
         mqttInt.subscribe(settings?.topicSub)
+		if (logEnable) log.debug "MQTTStatus- Subscribed to: ${settings?.topicSub}"        
     } catch(e) {
-        if (logEnable) log.debug "Initialize error: ${e.message}"
+        if (logEnable) log.debug "MQTTStatus- Initialize error: ${e.message}"
     }
 }
 
