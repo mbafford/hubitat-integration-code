@@ -15,9 +15,11 @@ metadata {
   definition (name: "zigbee2mqtt EcoSmart Remote ZBT-CCTSwitch-D0001", namespace: "mbafford", author: "Matthew Bafford", importURL: "https://raw.githubusercontent.com/mbafford/hubitat-integration-code/master/Drivers/EcoSmart_Remote_Zigbee2MQTT/ecosmart_remote_from_zigbee2mqtt.groovy") {
     capability "Initialize"
     capability "PushableButton"
+    capability "HoldableButton"
         
     attribute "numberOfButtons", "number"
     attribute "pushed", "number"
+    attribute "held",   "number"
   }
 
   preferences {
@@ -45,10 +47,15 @@ def parse(String mqttMsg) {
   // handle multiple versions of the zigbee2mqtt converter
   // from action:button1 to action:button_1 to click:power
   click  = payload["click"]
+  action = payload["action"]
   if ( click == null ) {
-    click = payload["action"]
+    click  = payload["action"]
+    action = null
   }
-  def button = null;
+    
+  def button  = null;
+  def hold    = false;
+  def release = false;
   switch ( click ) {
       case "power":
       case "button1":
@@ -58,25 +65,60 @@ def parse(String mqttMsg) {
       case "brightness":
       case "button2":
       case "button_2":
-          button = 2; 
+          button = 2;
+          // account for brightness_up_hold and brightness_down_hold
+          if ( action != null && action.endsWith("_hold") ) {
+              hold    = true
+              release = false
+          // account for brightness_up_release and brightness_down_release
+          } else if ( action != null && action.endsWith("_release") ) {
+              hold    = false
+              release = true
+          }
           break;
       case "colortemp":
       case "button3":
       case "button_3":
           button = 3;
+          // account for colortemp_up_hold and colortemp_down_hold
+          if ( action != null && action.endsWith("_hold") ) {
+              hold    = true
+              release = false
+          // account for colortemp_up_release and colortemp_down_release
+          } else if ( action != null && action.endsWith("_release") ) {
+              hold    = false
+              release = true
+          }
           break;
       case "memory":
       case "button4":
       case "button_4":
-          button = 4; 
+          button = 4
           break;
       default:
-          log.error "Unknown action on EcoSmart topic from MQTT: ${action}";
+          log.error "Unknown action on EcoSmart topic from MQTT: ${action}"
           return
   }
-  desc = "$device.displayName button $button was pushed"
-  if (logEnable) log.debug desc
-  sendEvent(name: "pushed", value: button, descriptionText: desc, isStateChange: true);
+  
+  if ( button != null ) {
+    desc = "$device.displayName button $button was ${hold ? 'held' : release ? 'released' : 'pushed'}"
+    if (logEnable) log.debug desc
+    
+    if ( hold ) {
+      sendEvent(name: "held",   value: button, descriptionText: desc, isStateChange: true)
+      sendEvent(name: "pushed", value: null,   descriptionText: desc, isStateChange: true)
+    } else if ( release ) {
+      sendEvent(name: "held",   value: null,   descriptionText: desc, isStateChange: true)
+      sendEvent(name: "pushed", value: null,   descriptionText: desc, isStateChange: true)
+    } else {
+      if ( state.held != null ) {
+        sendEvent(name: "held",   value: null,   descriptionText: desc, isStateChange: true)
+      }
+      sendEvent(name: "pushed", value: button, descriptionText: desc, isStateChange: true)
+      pauseExecution(500)
+      sendEvent(name: "pushed", value: null,   descriptionText: desc, isStateChange: true)
+    }
+  }
 }
 
 def updated() {
