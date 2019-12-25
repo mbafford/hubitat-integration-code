@@ -41,20 +41,41 @@ def parse(String mqttMsg) {
   if (logEnable) log.debug "MQTTStatus- incoming message: ${msg}"
 
   payload = parseJson( msg.get('payload') )
-  action  = payload["action"]
-    
+  
+  // handle multiple versions of the zigbee2mqtt converter
+  // from action:button1 to action:button_1 to click:power
+  click  = payload["click"]
+  if ( click == null ) {
+    click = payload["action"]
+  }
   def button = null;
-  switch ( action ) {
-      case "button1": button = 1; break;
-      case "button2": button = 2; break;
-      case "button3": button = 3; break;
-      case "button4": button = 4; break;
+  switch ( click ) {
+      case "power":
+      case "button1":
+      case "button_1":
+          button = 1;
+          break;
+      case "brightness":
+      case "button2":
+      case "button_2":
+          button = 2; 
+          break;
+      case "colortemp":
+      case "button3":
+      case "button_3":
+          button = 3;
+          break;
+      case "memory":
+      case "button4":
+      case "button_4":
+          button = 4; 
+          break;
       default:
           log.error "Unknown action on EcoSmart topic from MQTT: ${action}";
           return
   }
   desc = "$device.displayName button $button was pushed"
-  if (logEnable) desc
+  if (logEnable) log.debug desc
   sendEvent(name: "pushed", value: button, descriptionText: desc, isStateChange: true);
 }
 
@@ -86,4 +107,8 @@ def initialize() {
 
 def mqttClientStatus(String status){
   if (logEnable) log.debug "MQTTStatus- status: ${status}"
+    if ( !interfaces.mqtt.isConnected() ) {
+        log.warn "Connection lost. Attempting reconnection."
+        // initialize()
+    }
 }
